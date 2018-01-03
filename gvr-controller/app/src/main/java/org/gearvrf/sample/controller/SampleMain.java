@@ -54,7 +54,6 @@ public class SampleMain extends GVRMain
     private GVRScene mainScene;
     private GVRContext mGVRContext = null;
     private GVRActivity mActivity;
-    private GVRSceneObject cursor;
     private GVRCursorController mController;
 
     SampleMain(GVRActivity activity)
@@ -67,15 +66,16 @@ public class SampleMain extends GVRMain
     {
         mGVRContext = gvrContext;
         mainScene = mGVRContext.getMainScene();
-        mainScene.getEventReceiver().addListener(mPickHandler);
+
+        //Create cursor
         GVRInputManager inputManager = mGVRContext.getInputManager();
 
-        cursor = new GVRSceneObject(mGVRContext, mGVRContext.createQuad(1f, 1f),
-                                    mGVRContext.getAssetLoader().loadTexture(
-                                    new GVRAndroidResource(mGVRContext, R.raw.cursor)));
+        GVRTexture cursor_texture = mGVRContext.getAssetLoader().loadTexture(new GVRAndroidResource(mGVRContext, R.raw.cursor));
+        final GVRSceneObject cursor = new GVRSceneObject(mGVRContext, mGVRContext.createQuad(1f, 1f), cursor_texture);
         cursor.getRenderData().setDepthTest(false);
         cursor.getRenderData().setRenderingOrder(GVRRenderData.GVRRenderingOrder.OVERLAY);
 
+        //Initialize controller
         inputManager.selectController(new GVRInputManager.ICursorControllerSelectListener()
         {
             public void onCursorControllerSelected(GVRCursorController newController, GVRCursorController oldController)
@@ -92,110 +92,7 @@ public class SampleMain extends GVRMain
             }
         });
 
-        /*
-         * Adding Boards
-         */
-        GVRSceneObject object = getColorBoard();
-        object.getTransform().setPosition(0.0f, BOARD_OFFSET, DEPTH);
-        attachMeshCollider(object);
-        object.setName("MeshBoard1");
-        mainScene.addSceneObject(object);
-
-        object = getColorBoard();
-        object.getTransform().setPosition(0.0f, -BOARD_OFFSET, DEPTH);
-        attachMeshCollider(object);
-        object.setName("MeshBoard2");
-        mainScene.addSceneObject(object);
-
-        object = getColorBoard();
-        object.getTransform().setPosition(-BOARD_OFFSET, 0.0f, DEPTH);
-        attachMeshCollider(object);
-        object.setName("MeshBoard3");
-        mainScene.addSceneObject(object);
-
-        object = getColorBoard();
-        object.getTransform().setPosition(BOARD_OFFSET, 0.0f, DEPTH);
-        attachMeshCollider(object);
-        object.setName("MeshBoard4");
-        mainScene.addSceneObject(object);
-
-        object = getColorBoard();
-        object.getTransform().setPosition(BOARD_OFFSET, BOARD_OFFSET, DEPTH);
-        object.setName("MeshBoard5");
-        attachMeshCollider(object);
-        mainScene.addSceneObject(object);
-
-        object = getColorBoard();
-        object.getTransform().setPosition(BOARD_OFFSET, -BOARD_OFFSET, DEPTH);
-        attachMeshCollider(object);
-        object.setName("MeshBoard6");
-        mainScene.addSceneObject(object);
-
-        object = getColorBoard();
-        object.getTransform().setPosition(-BOARD_OFFSET, BOARD_OFFSET, DEPTH);
-        attachSphereCollider(object);
-        object.setName("SphereBoard1");
-        mainScene.addSceneObject(object);
-
-        object = getColorBoard();
-        object.getTransform().setPosition(-BOARD_OFFSET, -BOARD_OFFSET, DEPTH);
-        object.setName("SphereBoard2");
-        attachSphereCollider(object);
-        mainScene.addSceneObject(object);
-
-        GVRMesh mesh = null;
-        try
-        {
-            mesh = mGVRContext.getAssetLoader().loadMesh(
-                    new GVRAndroidResource(mGVRContext, "bunny.obj"));
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-            mesh = null;
-        }
-        if (mesh == null)
-        {
-            mActivity.finish();
-            Log.e(TAG, "Mesh was not loaded. Stopping application!");
-        }
-        // activity was stored in order to stop the application if the mesh is
-        // not loaded. Since we don't need anymore, we set it to null to reduce
-        // chance of memory leak.
-        mActivity = null;
-
-        object = getColorMesh(0.75f, mesh);
-        object.getTransform().setPosition(0.0f, 0.0f, DEPTH);
-        object.setName("BoundsBunny1");
-        attachBoundsCollider(object);
-        mainScene.addSceneObject(object);
-
-        object = getColorMesh(0.75f, mesh);
-        object.getTransform().setPosition(4.0f, 0.0f, DEPTH);
-        attachBoundsCollider(object);
-        object.setName("BoundsBunny2");
-        mainScene.addSceneObject(object);
-
-        object = getColorMesh(0.75f, mesh);
-        object.getTransform().setPosition(-4.0f, 0.0f, DEPTH);
-        attachMeshCollider(object);
-        object.setName("MeshBunny3");
-        mainScene.addSceneObject(object);
-
-        object = getColorMesh(0.75f, mesh);
-        object.getTransform().setPosition(0.0f, -4.0f, DEPTH);
-        attachMeshCollider(object);
-        object.setName("MeshBunny4");
-        mainScene.addSceneObject(object);
-
-        GVRAssetLoader assetLoader = gvrContext.getAssetLoader();
-        GVRTexture texture = assetLoader.loadTexture(
-                new GVRAndroidResource(gvrContext, R.drawable.skybox_gridroom));
-        GVRMaterial material = new GVRMaterial(gvrContext);
-        GVRSphereSceneObject skyBox = new GVRSphereSceneObject(gvrContext, false, material);
-        skyBox.getTransform().setScale(SCALE, SCALE, SCALE);
-        skyBox.getRenderData().getMaterial().setMainTexture(texture);
-        mainScene.addSceneObject(skyBox);
+        createScene(gvrContext);
     }
 
     private ITouchEvents mPickHandler = new GVREventListeners.TouchEvents()
@@ -246,26 +143,151 @@ public class SampleMain extends GVRMain
 
     }
 
-    private GVRSceneObject getColorBoard()
+
+    private void createScene(GVRContext gvrContext) {
+    /*
+     * Adding Cubes
+     */
+        GVRSceneObject object = createCube();
+        object.getTransform().setPosition(0.0f, BOARD_OFFSET, DEPTH);
+        object.setName("MeshBoard1");
+        mainScene.addSceneObject(object);
+
+        object = createCube();
+        object.getTransform().setPosition(0.0f, -BOARD_OFFSET, DEPTH);
+        object.setName("MeshBoard2");
+        mainScene.addSceneObject(object);
+
+        object = createCube();
+        object.getTransform().setPosition(-BOARD_OFFSET, 0.0f, DEPTH);
+        object.setName("MeshBoard3");
+        mainScene.addSceneObject(object);
+
+        object = createCube();
+        object.getTransform().setPosition(BOARD_OFFSET, 0.0f, DEPTH);
+        object.setName("MeshBoard4");
+        mainScene.addSceneObject(object);
+
+        object = createCube();
+        object.getTransform().setPosition(BOARD_OFFSET, BOARD_OFFSET, DEPTH);
+        object.setName("MeshBoard5");
+        mainScene.addSceneObject(object);
+
+        object = createCube();
+        object.getTransform().setPosition(BOARD_OFFSET, -BOARD_OFFSET, DEPTH);
+        object.setName("MeshBoard6");
+        mainScene.addSceneObject(object);
+
+        //Add Sphere
+        object = createSphere();
+        object.getTransform().setPosition(-BOARD_OFFSET, BOARD_OFFSET, DEPTH);
+        object.setName("SphereBoard1");
+        mainScene.addSceneObject(object);
+
+        object = createSphere();
+        object.getTransform().setPosition(-BOARD_OFFSET, -BOARD_OFFSET, DEPTH);
+        object.setName("SphereBoard2");
+        mainScene.addSceneObject(object);
+
+        GVRMesh mesh;
+        try
+        {
+            mesh = mGVRContext.getAssetLoader().loadMesh(
+                    new GVRAndroidResource(mGVRContext, "bunny.obj"));
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+            mesh = null;
+        }
+
+        if (mesh == null)
+        {
+            mActivity.finish();
+            Log.e(TAG, "Mesh was not loaded. Stopping application!");
+        }
+
+        // activity was stored in order to stop the application if the mesh is
+        // not loaded. Since we don't need anymore, we set it to null to reduce
+        // chance of memory leak.
+        mActivity = null;
+
+        //Create Mesh
+        object = createMesh(0.75f, mesh);
+        object.getTransform().setPosition(0.0f, 0.0f, DEPTH);
+        object.setName("BoundsBunny1");
+        attachBoundsCollider(object);
+        mainScene.addSceneObject(object);
+
+        object = createMesh(0.75f, mesh);
+        object.getTransform().setPosition(4.0f, 0.0f, DEPTH);
+        attachBoundsCollider(object);
+        object.setName("BoundsBunny2");
+        mainScene.addSceneObject(object);
+
+        object = createMesh(0.75f, mesh);
+        object.getTransform().setPosition(-4.0f, 0.0f, DEPTH);
+        attachMeshCollider(object);
+        object.setName("MeshBunny3");
+        mainScene.addSceneObject(object);
+
+        object = createMesh(0.75f, mesh);
+        object.getTransform().setPosition(0.0f, -4.0f, DEPTH);
+        attachMeshCollider(object);
+        object.setName("MeshBunny4");
+        mainScene.addSceneObject(object);
+
+        //Add Skybox
+        GVRAssetLoader assetLoader = gvrContext.getAssetLoader();
+        GVRTexture texture = assetLoader.loadTexture(
+                new GVRAndroidResource(gvrContext, R.drawable.skybox_gridroom));
+        GVRMaterial material = new GVRMaterial(gvrContext);
+        GVRSphereSceneObject skyBox = new GVRSphereSceneObject(gvrContext, false, material);
+        skyBox.getTransform().setScale(SCALE, SCALE, SCALE);
+        skyBox.getRenderData().getMaterial().setMainTexture(texture);
+        mainScene.addSceneObject(skyBox);
+    }
+
+    private GVRSceneObject createCube()
     {
         GVRMaterial material = new GVRMaterial(mGVRContext, GVRShaderType.Color.ID);
         material.setColor(Color.GRAY);
 
-        GVRCubeSceneObject board = new GVRCubeSceneObject(mGVRContext);
-        board.getRenderData().setMaterial(material);
-        board.getRenderData().setRenderingOrder(GVRRenderData.GVRRenderingOrder.GEOMETRY);
-        return board;
+        GVRCubeSceneObject cube = new GVRCubeSceneObject(mGVRContext);
+        cube.getRenderData().setMaterial(material);
+        //cube.getRenderData().setRenderingOrder(GVRRenderData.GVRRenderingOrder.GEOMETRY);
+
+        attachMeshCollider(cube);
+
+        return cube;
     }
 
-    private GVRSceneObject getColorMesh(float scale, GVRMesh mesh)
+    private GVRSceneObject createSphere()
+    {
+        GVRMaterial material = new GVRMaterial(mGVRContext, GVRShaderType.Color.ID);
+        material.setColor(Color.GRAY);
+
+        GVRSphereSceneObject sphere = new GVRSphereSceneObject(mGVRContext);
+        sphere.getRenderData().setMaterial(material);
+        sphere.getTransform().setScale(0.5f, 0.5f, 0.5f);
+        //sphere.getRenderData().setRenderingOrder(GVRRenderData.GVRRenderingOrder.GEOMETRY);
+
+        attachSphereCollider(sphere);
+
+        return sphere;
+    }
+
+    private GVRSceneObject createMesh(float scale, GVRMesh mesh)
     {
         GVRMaterial material = new GVRMaterial(mGVRContext, GVRShaderType.Color.ID);
         material.setColor(Color.GRAY);
 
         GVRSceneObject meshObject = new GVRSceneObject(mGVRContext, mesh);
+
         meshObject.getTransform().setScale(scale, scale, scale);
         meshObject.getRenderData().setMaterial(material);
         meshObject.getRenderData().setRenderingOrder(GVRRenderData.GVRRenderingOrder.GEOMETRY);
+
         return meshObject;
     }
 
@@ -276,7 +298,9 @@ public class SampleMain extends GVRMain
 
     private void attachSphereCollider(GVRSceneObject sceneObject)
     {
-        sceneObject.attachComponent(new GVRSphereCollider(mGVRContext));
+        GVRSphereCollider collider = new GVRSphereCollider(mGVRContext);
+        collider.setRadius(1.0f);
+        sceneObject.attachComponent(collider);
     }
 
     private void attachBoundsCollider(GVRSceneObject sceneObject)
