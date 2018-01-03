@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 package org.gearvrf.sample.controller;
-import android.view.MotionEvent;
+
+import android.graphics.Color;
 
 import java.io.IOException;
-import java.util.concurrent.Future;
 
 import org.gearvrf.GVRActivity;
 import org.gearvrf.GVRAndroidResource;
@@ -36,46 +36,26 @@ import org.gearvrf.GVRSceneObject;
 
 import org.gearvrf.GVRSphereCollider;
 import org.gearvrf.GVRTexture;
-import org.gearvrf.GVRTransform;
 import org.gearvrf.ITouchEvents;
-import org.gearvrf.io.CursorControllerListener;
-import org.gearvrf.io.GVRControllerType;
 import org.gearvrf.io.GVRInputManager;
-import org.gearvrf.io.GearCursorController;
-import org.gearvrf.io.GVRGazeCursorController;
 
 import org.gearvrf.scene_objects.GVRCubeSceneObject;
 import org.gearvrf.scene_objects.GVRSphereSceneObject;
 import org.gearvrf.utility.Log;
-import org.joml.Matrix4f;
 
 public class SampleMain extends GVRMain
 {
     private static final String TAG = "SampleMain";
 
-    private static final float UNPICKED_COLOR_R = 0.7f;
-    private static final float UNPICKED_COLOR_G = 0.7f;
-    private static final float UNPICKED_COLOR_B = 0.7f;
-    private static final float UNPICKED_COLOR_A = 1.0f;
-
-    private static final float PICKED_COLOR_R = 1.0f;
-    private static final float PICKED_COLOR_G = 0.0f;
-    private static final float PICKED_COLOR_B = 0.0f;
-    private static final float PICKED_COLOR_A = 1.0f;
-
-    private static final float CLICKED_COLOR_R = 0.5f;
-    private static final float CLICKED_COLOR_G = 0.5f;
-    private static final float CLICKED_COLOR_B = 1.0f;
-    private static final float CLICKED_COLOR_A = 1.0f;
-
     private static final float SCALE = 200.0f;
     private static final float DEPTH = -7.0f;
     private static final float BOARD_OFFSET = 2.0f;
+
     private GVRScene mainScene;
     private GVRContext mGVRContext = null;
     private GVRActivity mActivity;
     private GVRSceneObject cursor;
-    private GVRCursorController controller;
+    private GVRCursorController mController;
 
     SampleMain(GVRActivity activity)
     {
@@ -89,6 +69,7 @@ public class SampleMain extends GVRMain
         mainScene = mGVRContext.getMainScene();
         mainScene.getEventReceiver().addListener(mPickHandler);
         GVRInputManager inputManager = mGVRContext.getInputManager();
+
         cursor = new GVRSceneObject(mGVRContext, mGVRContext.createQuad(1f, 1f),
                                     mGVRContext.getAssetLoader().loadTexture(
                                     new GVRAndroidResource(mGVRContext, R.raw.cursor)));
@@ -103,7 +84,7 @@ public class SampleMain extends GVRMain
                 {
                     oldController.removePickEventListener(mPickHandler);
                 }
-                controller = newController;
+                mController = newController;
                 newController.addPickEventListener(mPickHandler);
                 newController.setCursor(cursor);
                 newController.setCursorDepth(DEPTH);
@@ -223,19 +204,15 @@ public class SampleMain extends GVRMain
 
         public void onEnter(GVRSceneObject sceneObj, GVRPicker.GVRPickedObject pickInfo)
         {
-            sceneObj.getRenderData().getMaterial().setVec4("u_color", PICKED_COLOR_R,
-                                                           PICKED_COLOR_G, PICKED_COLOR_B,
-                                                           PICKED_COLOR_A);
+            sceneObj.getRenderData().getMaterial().setColor(Color.RED);
         }
 
         public void onTouchStart(GVRSceneObject sceneObj, GVRPicker.GVRPickedObject pickInfo)
         {
             if (movingObject == null)
             {
-                sceneObj.getRenderData().getMaterial().setVec4("u_color", CLICKED_COLOR_R,
-                                                               CLICKED_COLOR_G, CLICKED_COLOR_B,
-                                                               CLICKED_COLOR_A);
-                if (controller.startDrag(sceneObj))
+                sceneObj.getRenderData().getMaterial().setColor(Color.BLUE);
+                if (mController.startDrag(sceneObj))
                 {
                     movingObject = sceneObj;
                 }
@@ -244,24 +221,20 @@ public class SampleMain extends GVRMain
 
         public void onTouchEnd(GVRSceneObject sceneObj, GVRPicker.GVRPickedObject pickInfo)
         {
-            sceneObj.getRenderData().getMaterial().setVec4("u_color", PICKED_COLOR_R,
-                                                           PICKED_COLOR_G, PICKED_COLOR_B,
-                                                           PICKED_COLOR_A);
+            sceneObj.getRenderData().getMaterial().setColor(Color.RED);
             if (sceneObj == movingObject)
             {
-                controller.stopDrag();
+                mController.stopDrag();
                 movingObject = null;
             }
          }
 
         public void onExit(GVRSceneObject sceneObj, GVRPicker.GVRPickedObject pickInfo)
         {
-            sceneObj.getRenderData().getMaterial().setVec4("u_color", UNPICKED_COLOR_R,
-                                                           UNPICKED_COLOR_G, UNPICKED_COLOR_B,
-                                                           UNPICKED_COLOR_A);
+            sceneObj.getRenderData().getMaterial().setColor(Color.GRAY);
             if (sceneObj == movingObject)
             {
-                controller.stopDrag();
+                mController.stopDrag();
                 movingObject = null;
             }
         }
@@ -276,8 +249,8 @@ public class SampleMain extends GVRMain
     private GVRSceneObject getColorBoard()
     {
         GVRMaterial material = new GVRMaterial(mGVRContext, GVRShaderType.Color.ID);
-        material.setVec4("u_color", UNPICKED_COLOR_R,
-                         UNPICKED_COLOR_G, UNPICKED_COLOR_B, UNPICKED_COLOR_A);
+        material.setColor(Color.GRAY);
+
         GVRCubeSceneObject board = new GVRCubeSceneObject(mGVRContext);
         board.getRenderData().setMaterial(material);
         board.getRenderData().setRenderingOrder(GVRRenderData.GVRRenderingOrder.GEOMETRY);
@@ -287,8 +260,7 @@ public class SampleMain extends GVRMain
     private GVRSceneObject getColorMesh(float scale, GVRMesh mesh)
     {
         GVRMaterial material = new GVRMaterial(mGVRContext, GVRShaderType.Color.ID);
-        material.setVec4("u_color", UNPICKED_COLOR_R,
-                         UNPICKED_COLOR_G, UNPICKED_COLOR_B, UNPICKED_COLOR_A);
+        material.setColor(Color.GRAY);
 
         GVRSceneObject meshObject = new GVRSceneObject(mGVRContext, mesh);
         meshObject.getTransform().setScale(scale, scale, scale);
