@@ -255,7 +255,6 @@ public class SampleMain extends GVRMain
 
         GVRCubeSceneObject cube = new GVRCubeSceneObject(mGVRContext);
         cube.getRenderData().setMaterial(material);
-        //cube.getRenderData().setRenderingOrder(GVRRenderData.GVRRenderingOrder.GEOMETRY);
 
         attachMeshCollider(cube);
 
